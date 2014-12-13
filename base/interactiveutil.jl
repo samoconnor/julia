@@ -203,6 +203,75 @@ function which(f, t::(Type...))
     ms[1]
 end
 
+### Utilities for @code_typewarn
+immutable TypeWarn{T} end
+
+show{T}(io::IO, ::Type{TypeWarn{T}}) = print_with_color(:red, io, "$T")
+
+function show_expr_type{T}(io::IO, ::Type{TypeWarn{T}})
+    if is(T, Any) || isa(T, UnionType)
+        print_with_color(:red, io, "::$T")
+    else
+        print(io, "::$T")
+    end
+end
+
+mod_typ(a::Vector{Any}, f) = [mod_typ(el, f) for el in a]
+function mod_typ(ex::Expr, f)
+    body = ex.args[3]
+    newbody = mod_typ_copy(body, f)
+    Expr(:lambda, ex.args[1], ex.args[2], newbody)
+end
+
+function mod_typ_copy(ex::Expr, f)
+    excopy = copy(ex)
+    if ex.head == :call
+        arg1 = ex.args[1]
+        if arg1 == :box || arg1 == TopNode(:box) || arg1 == TopNode(:getfield)
+            return excopy
+        end
+    end
+    excopy.typ = f(excopy)
+    for i = 1:length(excopy.args)
+        excopy.args[i] = mod_typ_copy(excopy.args[i], f)
+    end
+    excopy
+end
+mod_typ_copy(s::SymbolNode, f) = SymbolNode(s.name, f(s))
+mod_typ_copy(arg, f) = arg
+
+function typ_warn(ex::Expr)
+    if in(ex.head, (:line, :boundscheck, :gotoifnot, :return))
+        return ex.typ
+    elseif ex.head == :(=) && dontannotate(ex.args[2])
+        return ex.typ
+    end
+    TypeWarn{ex.typ}
+end
+typ_warn(s::SymbolNode) = TypeWarn{s.typ}
+
+dontannotate(::Number) = true
+dontannotate(::(Number...)) = true
+dontannotate(::Expr) = true
+dontannotate(::SymbolNode) = true
+dontannotate(a) = false
+
+function code_typewarn(f, types)
+    exs = mod_typ(code_typed(f, types), typ_warn)
+    for i = 1:length(exs)
+        typv = exs[i].args[2][2]
+        for j = 1:length(typv)
+            a = typv[j][2]
+            if is(a, Any) || isa(a, UnionType)
+                typv[j][2] = TypeWarn{a}
+            end
+        end
+    end
+    exs
+end
+
+
+# Generate reflection macros
 typesof(args...) = map(a->(isa(a,Type) ? Type{a} : typeof(a)), args)
 
 function gen_call_with_extracted_types(fcn, ex0)
@@ -248,7 +317,7 @@ function gen_call_with_extracted_types(fcn, ex0)
     exret
 end
 
-for fname in [:which, :less, :edit, :code_typed, :code_lowered, :code_llvm, :code_native]
+for fname in [:which, :less, :edit, :code_typed, :code_lowered, :code_llvm, :code_native, :code_typewarn]
     @eval begin
         macro ($fname)(ex0)
             gen_call_with_extracted_types($(Expr(:quote,fname)), ex0)
