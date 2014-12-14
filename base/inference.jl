@@ -2511,6 +2511,9 @@ const inline_incompletematch_allowed = false
 
 inline_worthy(body, cost::Real) = true
 function inline_worthy(body::Expr, cost::Real=1.0) # precondition: 0<cost
+    if ccall(:can_inline, Cint, ()) == 0
+        return false
+    end
     if popmeta!(body, :inline)[1]
         return true
     end

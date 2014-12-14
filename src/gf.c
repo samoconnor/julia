@@ -1931,6 +1931,11 @@ jl_value_t *jl_matching_methods(jl_function_t *gf, jl_value_t *type, int lim)
     return ml_matches(mt->defs, type, jl_gf_name(gf), lim);
 }
 
+DLLEXPORT int can_inline(void)
+{
+    return jl_compileropts.can_inline;
+}
+
 #ifdef __cplusplus
 }
 #endif

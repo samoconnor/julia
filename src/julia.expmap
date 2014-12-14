@@ -32,6 +32,7 @@
     uv_*;
     add_library_mapping;
     utf8proc_*;
+    can_inline;
 
     /* freebsd */
     environ;
