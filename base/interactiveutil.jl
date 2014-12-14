@@ -203,12 +203,12 @@ function which(f, t::(Type...))
     ms[1]
 end
 
-### Utilities for @code_typewarn
-immutable TypeWarn{T} end
+### Utilities for @code_warntype
+immutable WarnType{T} end
 
-show{T}(io::IO, ::Type{TypeWarn{T}}) = print_with_color(:red, io, "$T")
+show{T}(io::IO, ::Type{WarnType{T}}) = print_with_color(:red, io, "$T")
 
-function show_expr_type{T}(io::IO, ::Type{TypeWarn{T}})
+function show_expr_type{T}(io::IO, ::Type{WarnType{T}})
     if !isleaftype(T)
         print_with_color(:red, io, "::$T")
     else
@@ -253,9 +253,9 @@ function typ_warn(ex::Expr)
     elseif ex.head == :(=) && dontannotate(ex.args[2])
         return ex.typ
     end
-    TypeWarn{ex.typ}
+    WarnType{ex.typ}
 end
-typ_warn(s::SymbolNode) = TypeWarn{s.typ}
+typ_warn(s::SymbolNode) = WarnType{s.typ}
 
 dontannotate(::Number) = true
 dontannotate(::(Number...)) = true
@@ -264,14 +264,14 @@ dontannotate(::SymbolNode) = true
 dontannotate(::LambdaStaticData) = true
 dontannotate(a) = false
 
-function code_typewarn(f, types)
+function code_warntype(f, types)
     exs = mod_typ(code_typed(f, types), typ_warn)
     for i = 1:length(exs)
         typv = exs[i].args[2][2]
         for j = 1:length(typv)
             a = typv[j][2]
             if is(a, Any) || isa(a, UnionType)
-                typv[j][2] = TypeWarn{a}
+                typv[j][2] = WarnType{a}
             end
         end
     end
@@ -325,7 +325,7 @@ function gen_call_with_extracted_types(fcn, ex0)
     exret
 end
 
-for fname in [:which, :less, :edit, :code_typed, :code_lowered, :code_llvm, :code_native, :code_typewarn]
+for fname in [:which, :less, :edit, :code_typed, :code_lowered, :code_llvm, :code_native, :code_warntype]
     @eval begin
         macro ($fname)(ex0)
             gen_call_with_extracted_types($(Expr(:quote,fname)), ex0)

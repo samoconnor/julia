@@ -1366,7 +1366,7 @@ export
     @edit,
     @less,
     @code_typed,
-    @code_typewarn,
+    @code_warntype,
     @code_lowered,
     @code_llvm,
     @code_native,
