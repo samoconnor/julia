@@ -227,7 +227,7 @@ function mod_typ_copy(ex::Expr, f)
     excopy = copy(ex)
     if ex.head == :call
         arg1 = ex.args[1]
-        if arg1 == :box || arg1 == TopNode(:box) || arg1 == TopNode(:getfield)
+        if in(arg1, (:box, TopNode(:box), :throw)) || ismodulecall(ex)
             return excopy
         end
     end
@@ -239,6 +239,13 @@ function mod_typ_copy(ex::Expr, f)
 end
 mod_typ_copy(s::SymbolNode, f) = SymbolNode(s.name, f(s))
 mod_typ_copy(arg, f) = arg
+
+function ismodulecall(ex::Expr)
+    ex.head == :call && ex.args[1] == TopNode(:getfield) &&
+        isa(ex.args[2], Symbol) &&
+        isdefined(current_module(), ex.args[2]) &&
+        isa(getfield(current_module(), ex.args[2]), Module)
+end
 
 function typ_warn(ex::Expr)
     if in(ex.head, (:line, :boundscheck, :gotoifnot, :return))
