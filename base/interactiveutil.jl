@@ -209,7 +209,7 @@ immutable TypeWarn{T} end
 show{T}(io::IO, ::Type{TypeWarn{T}}) = print_with_color(:red, io, "$T")
 
 function show_expr_type{T}(io::IO, ::Type{TypeWarn{T}})
-    if is(T, Any) || isa(T, UnionType)
+    if !isleaftype(T)
         print_with_color(:red, io, "::$T")
     else
         print(io, "::$T")
@@ -261,6 +261,7 @@ dontannotate(::Number) = true
 dontannotate(::(Number...)) = true
 dontannotate(::Expr) = true
 dontannotate(::SymbolNode) = true
+dontannotate(::LambdaStaticData) = true
 dontannotate(a) = false
 
 function code_typewarn(f, types)
