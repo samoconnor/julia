@@ -85,7 +85,7 @@ static const char *opts =
 
 void parse_opts(int *argcp, char ***argvp)
 {
-    static char* shortopts = "+H:hJ:C";
+    static char* shortopts = "+H:hJ:C:";
     static struct option longopts[] = {
         { "home",          required_argument, 0, 'H' },
         { "build",         required_argument, 0, 'b' },
