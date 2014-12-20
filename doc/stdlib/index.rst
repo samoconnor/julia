@@ -13,6 +13,7 @@
    linalg
    constants
    file
+   io
    punctuation
    sort
    pkg

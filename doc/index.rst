@@ -62,6 +62,7 @@
    stdlib/linalg
    stdlib/constants
    stdlib/file
+   stdlib/io
    stdlib/punctuation
    stdlib/sort
    stdlib/pkg
