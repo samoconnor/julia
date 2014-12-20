@@ -1,7 +1,10 @@
 .. _stdlib-linalg:
 
-Linear Algebra
---------------
+ Linear Algebra
+===============
+
+Standard functions
+------------------
 
 .. module:: Base.LinAlg
 

@@ -1,5 +1,5 @@
 Punctuation
------------
+===========
 
 Extended documentation for mathematical symbols & functions is :ref:`here <mathematical-operators>`.
 

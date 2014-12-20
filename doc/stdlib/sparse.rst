@@ -3,7 +3,7 @@
 .. currentmodule:: Base
 
 Sparse Matrices
----------------
+===============
 
 Sparse matrices support much of the same set of operations as dense matrices. The following functions are specific to sparse matrices.
 
