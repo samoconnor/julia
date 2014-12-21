@@ -11,7 +11,7 @@ function build_sysimg(sysimg_path=default_sysimg_path, cpu_target="native", user
     sysimg = dlopen_e("sys")
     if sysimg != C_NULL
         if !force && Sys.dlpath(sysimg) == "$(sysimg_path).$(Sys.dlext)"
-            println("System image already loaded at $(Sys.dlpath(sysimg)), set force to override")
+            info("System image already loaded at $(Sys.dlpath(sysimg)), set force to override")
             return
         end
     end
@@ -48,12 +48,12 @@ function build_sysimg(sysimg_path=default_sysimg_path, cpu_target="native", user
 
             # Start by building sys0.{ji,o}
             sys0_path = joinpath(dirname(sysimg_path), "sys0")
-            println("Building sys0.o...")
+            info("Building sys0.o...")
             println("$julia -C $cpu_target --build $sys0_path sysimg.jl")
             run(`$julia -C $cpu_target --build $sys0_path sysimg.jl`)
 
             # Bootstrap off of that to create sys.{ji,o}
-            println("Building sys.o...")
+            info("Building sys.o...")
             println("$julia -C $cpu_target --build $sysimg_path -J $sys0_path.ji -f sysimg.jl")
             run(`$julia -C $cpu_target --build $sysimg_path -J $sys0_path.ji -f sysimg.jl`)
 
@@ -75,10 +75,10 @@ function build_sysimg(sysimg_path=default_sysimg_path, cpu_target="native", user
             @windows_only append!(FLAGS, ["-L$JULIA_HOME", "-ljulia", "-lssp"])
 
             if ld != nothing
-                println("Linking sys.$(Sys.dlext)")
+                info("Linking sys.$(Sys.dlext)")
                 run(`$ld $FLAGS -o $sysimg_path.$(Sys.dlext) $sysimg_path.o`)
 
-                println("System image successfully built at $sysimg_path.$(Sys.dlext)")
+                info("System image successfully built at $sysimg_path.$(Sys.dlext)")
                 @windows_only begin
                     if convert(VersionNumber, Base.libllvm_version) < v"3.5.0"
                         LLVM_msg = "Building sys.dll on Windows against LLVM < 3.5.0 can cause incorrect backtraces!"
@@ -87,13 +87,13 @@ function build_sysimg(sysimg_path=default_sysimg_path, cpu_target="native", user
                     end
                 end
             else
-                println("System image successfully built at $sysimg_path.ji")
+                info("System image successfully built at $sysimg_path.ji")
             end
 
             if default_sysimg_path != sysimg_path
-                println("To run Julia with this image loaded, run: julia -J $sysimg_path.ji")
+                info("To run Julia with this image loaded, run: julia -J $sysimg_path.ji")
             else
-                println("Julia will automatically load this system image at next startup")
+                info("Julia will automatically load this system image at next startup")
             end
         finally
             # Cleanup userimg.jl
