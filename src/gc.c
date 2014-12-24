@@ -284,9 +284,9 @@ static void run_finalizer(jl_value_t *o, jl_value_t *ff)
             jl_apply(f, (jl_value_t**)&o, 1);
         }
         JL_CATCH {
-            JL_PRINTF(JL_STDERR, "error in running finalizer: ");
+            jl_printf(JL_STDERR, "error in running finalizer: ");
             jl_static_show(JL_STDERR, jl_exception_in_transit);
-            JL_PUTC('\n',JL_STDERR);
+            jl_printf(JL_STDERR, "\n");
         }
         if (jl_is_tuple(ff))
             ff = jl_t1(ff);
@@ -961,7 +961,7 @@ void jl_gc_collect(void)
         uint64_t t0 = jl_hrtime();
         gc_mark();
 #ifdef GCTIME
-        JL_PRINTF(JL_STDERR, "mark time %.3f ms\n", (jl_hrtime()-t0)*1.0e6);
+        jl_printf(JL_STDERR, "mark time %.3f ms\n", (jl_hrtime()-t0)*1.0e6);
 #endif
 #if defined(MEMPROFILE)
         all_pool_stats();
@@ -973,7 +973,7 @@ void jl_gc_collect(void)
         sweep_weak_refs();
         gc_sweep();
 #ifdef GCTIME
-        JL_PRINTF(JL_STDERR, "sweep time %.3f ms\n", (jl_hrtime()-t1)*1.0e6);
+        jl_printf(JL_STDERR, "sweep time %.3f ms\n", (jl_hrtime()-t1)*1.0e6);
 #endif
         int nfinal = to_finalize.len;
         run_finalizers();
@@ -1163,7 +1163,7 @@ static size_t pool_stats(pool_t *p, size_t *pwaste)
         pg = nextpg;
     }
     *pwaste = npgs*GC_PAGE_SZ - (nused*p->osize);
-    JL_PRINTF(JL_STDOUT,
+    jl_printf(JL_STDOUT,
               "%4d : %7d/%7d objects, %5d pages, %8d bytes, %8d waste\n",
               p->osize,
               nused,
@@ -1189,7 +1189,7 @@ static void all_pool_stats(void)
         no += (b/ephe_pools[i].osize);
         tw += w;
     }
-    JL_PRINTF(JL_STDOUT,
+    jl_printf(JL_STDOUT,
                "%d objects, %d total allocated, %d total fragments\n",
                no, nb, tw);
 }
@@ -1214,7 +1214,7 @@ static void big_obj_stats(void)
         ma = ma->next;
     }
 
-    JL_PRINTF(JL_STDOUT, "%d bytes in %d large objects\n", nbytes, nused);
+    jl_printf(JL_STDOUT, "%d bytes in %d large objects\n", nbytes, nused);
 }
 #endif //MEMPROFILE
 

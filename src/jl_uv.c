@@ -452,11 +452,11 @@ DLLEXPORT int jl_fs_chmod(char *path, int mode)
     return ret;
 }
 
-DLLEXPORT int jl_fs_write(int handle, char *data, size_t len, int64_t offset)
+DLLEXPORT int jl_fs_write(int handle, const char *data, size_t len, int64_t offset)
 {
     uv_fs_t req;
     uv_buf_t buf[1];
-    buf[0].base = data;
+    buf[0].base = (char*)data;
     buf[0].len = len;
     int ret = uv_fs_write(jl_io_loop, &req, handle, buf, 1, offset, NULL);
     uv_fs_req_cleanup(&req);
@@ -508,7 +508,7 @@ DLLEXPORT int jl_fs_close(int handle)
 }
 
 //units are in ms
-DLLEXPORT int jl_puts(char *str, uv_stream_t *stream)
+DLLEXPORT int jl_puts(const char *str, uv_stream_t *stream)
 {
     if (!stream) return 0;
     return jl_write(stream,str,strlen(str));
@@ -542,41 +542,6 @@ DLLEXPORT int jl_write_copy(uv_stream_t *stream, const char *str, size_t n, uv_w
     return err;
 }
 
-DLLEXPORT int jl_putc(char c, uv_stream_t *stream)
-{
-    int err;
-    if (stream!=0) {
-        if (stream->type<UV_HANDLE_TYPE_MAX) { //is uv handle
-            if (stream->type == UV_FILE) {
-                JL_SIGATOMIC_BEGIN();
-                jl_uv_file_t *file = (jl_uv_file_t *)stream;
-                // Do a blocking write for now
-                uv_fs_t req;
-                uv_buf_t buf[1];
-                buf[0].base = &c;
-                buf[0].len = 1;
-                err = uv_fs_write(file->loop, &req, file->file, buf, 1, -1, NULL);
-                JL_SIGATOMIC_END();
-                return err ? 0 : 1;
-            }
-            else {
-                uv_write_t *uvw = (uv_write_t*)malloc(sizeof(uv_write_t)+1);
-                err = jl_write_copy(stream,(char*)&c,1,uvw, (void*)&jl_uv_writecb);
-                if (err < 0) {
-                    free(uvw);
-                    return 0;
-                }
-                return 1;
-            }
-        }
-        else {
-            ios_t *handle = (ios_t*)stream;
-            return ios_putc(c,handle);
-        }
-    }
-    return 0;
-}
-
 DLLEXPORT int jl_write_no_copy(uv_stream_t *stream, char *data, size_t n, uv_write_t *uvw, void *writecb)
 {
     uv_buf_t buf[1];
@@ -594,15 +559,6 @@ DLLEXPORT int jl_putc_copy(unsigned char c, uv_stream_t *stream, void *uvw, void
     return jl_write_copy(stream,(char *)&c,1,(uv_write_t*)uvw,writecb);
 }
 
-DLLEXPORT int jl_pututf8(uv_stream_t *s, uint32_t wchar )
-{
-    char buf[8];
-    if (wchar < 0x80)
-        return jl_putc((int)wchar, s);
-    size_t n = u8_toutf8(buf, 8, &wchar, 1);
-    return jl_write(s, buf, n);
-}
-
 DLLEXPORT int jl_pututf8_copy(uv_stream_t *s, uint32_t wchar, void *uvw, void *writecb)
 {
     char buf[8];
@@ -614,37 +570,44 @@ DLLEXPORT int jl_pututf8_copy(uv_stream_t *s, uint32_t wchar, void *uvw, void *w
 
 DLLEXPORT size_t jl_write(uv_stream_t *stream, const char *str, size_t n)
 {
+    assert(stream);
+
     int err;
-    //TODO: BAD!! Needed because Julia can't yet detect null stdio
-    if (stream == 0)
-        return 0;
-    if (stream->type<UV_HANDLE_TYPE_MAX) { //is uv handle
-        if (stream->type == UV_FILE) {
-            JL_SIGATOMIC_BEGIN();
-            jl_uv_file_t *file = (jl_uv_file_t *)stream;
-            // Do a blocking write for now
-            uv_fs_t req;
-            uv_buf_t buf[1];
-            buf[0].base = (char*)str;
-            buf[0].len = n;
-            err = uv_fs_write(file->loop, &req, file->file, buf, 1, -1, NULL);
-            JL_SIGATOMIC_END();
-            return err ? 0 : n;
-        }
-        else {
-            uv_write_t *uvw = (uv_write_t*)malloc(sizeof(uv_write_t)+n);
-            err = jl_write_copy(stream,str,n,uvw, (void*)&jl_uv_writecb);
-            if (err < 0) {
-                free(uvw);
-                return 0;
-            }
-            return n;
-        }
+
+    // Fallback for output during early initialisation...
+    if (stream == (void*)STDOUT_FILENO) {
+        return fwrite(str, 1, n, stdout);
+    }
+    if (stream == (void*)STDERR_FILENO) {
+        return fwrite(str, 1, n, stderr);
+    }
+
+    // This is needed because caller jl_static_show() in builtins.c can be
+    // called from fl_print in flisp/print.c (via cvalue_printdata()).
+    // cvalue_printdata() passes ios_t* to jl_static_show().
+    if (stream->type > UV_HANDLE_TYPE_MAX) {
+        return ios_write((ios_t*)stream, str, n);
+    }
+
+    if (stream->type == UV_FILE) {
+        // jl_fs_write() assumes jl_io_loop.
+        assert(stream->loop == jl_io_loop);
+        JL_SIGATOMIC_BEGIN();
+        err = jl_fs_write(((jl_uv_file_t *)stream)->file, str, n, -1);
+        JL_SIGATOMIC_END();
+        return err ? 0 : n;
     }
     else {
-        ios_t *handle = (ios_t*)stream;
-        return ios_write(handle,str,n);
+        uv_write_t *uvw = (uv_write_t*)malloc(sizeof(uv_write_t)+n);
+        err = jl_write_copy(stream,str,n,uvw, (void*)&jl_uv_writecb);
+        if (err < 0) {
+            free(uvw);
+            return 0;
+        }
+        return n;
     }
+
+    assert(0);
 }
 
 extern int vasprintf(char **str, const char *fmt, va_list ap);
@@ -664,7 +627,7 @@ int jl_vprintf(uv_stream_t *s, const char *format, va_list args)
 
     if (c >= 0) {
         jl_write(s, str, c);
-        LLT_FREE(str);
+        free(str);
     }
     va_end(al);
     return c;
@@ -681,10 +644,19 @@ int jl_printf(uv_stream_t *s, const char *format, ...)
     return c;
 }
 
-char *jl_bufptr(ios_t *s)
+DLLEXPORT void jl_safe_printf(const char *fmt, ...)
 {
-    return s->buf;
+    static char buf[1000];
+
+    va_list args;
+    va_start(args, fmt);
+    // Not async signal safe on some platforms?
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    write(STDERR_FILENO, buf, strlen(buf));
 }
+
 
 DLLEXPORT void jl_exit(int exitcode)
 {
@@ -900,11 +872,6 @@ DLLEXPORT int jl_tcp_quickack(uv_tcp_t *handle, int on)
 }
 #endif
 
-DLLEXPORT char *jl_ios_buf_base(ios_t *ios)
-{
-    return ios->buf;
-}
-
 DLLEXPORT jl_uv_libhandle jl_wrap_raw_dl_handle(void *handle)
 {
     uv_lib_t *lib = (uv_lib_t*)malloc(sizeof(uv_lib_t));
@@ -949,7 +916,7 @@ DLLEXPORT int jl_ispty(uv_pipe_t *pipe)
     if (uv_pipe_getsockname(pipe, name, &len)) return 0;
     // return true if name matches regex:
     // ^\\\\?\\pipe\\(msys|cygwin)-[0-9a-z]{16}-[pt]ty[1-9][0-9]*-
-    //JL_PRINTF(JL_STDERR,"pipe_name: %s\n", name);
+    //jl_printf(JL_STDERR,"pipe_name: %s\n", name);
     int n = 0;
     if (!strncmp(name,"\\\\?\\pipe\\msys-",14))
         n = 14;
@@ -957,16 +924,16 @@ DLLEXPORT int jl_ispty(uv_pipe_t *pipe)
         n = 16;
     else
         return 0;
-    //JL_PRINTF(JL_STDERR,"prefix pass\n");
+    //jl_printf(JL_STDERR,"prefix pass\n");
     name += n;
     for (int n = 0; n < 16; n++)
         if (!ishexchar(*name++)) return 0;
-    //JL_PRINTF(JL_STDERR,"hex pass\n");
+    //jl_printf(JL_STDERR,"hex pass\n");
     if ((*name++)!='-') return 0;
     if (*name != 'p' && *name != 't') return 0;
     name++;
     if (*name++ != 't' || *name++ != 'y') return 0;
-    //JL_PRINTF(JL_STDERR,"tty pass\n");
+    //jl_printf(JL_STDERR,"tty pass\n");
     return 1;
 }
 #endif

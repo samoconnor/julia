@@ -126,7 +126,7 @@ static void create_PRUNTIME_FUNCTION(uint8_t *Code, size_t Size, StringRef fnnam
 #endif
             static int warned = 0;
             if (!warned) {
-                JL_PRINTF(JL_STDERR, "WARNING: failed to insert module info for backtrace: %d\n", GetLastError());
+                jl_printf(JL_STDERR, "WARNING: failed to insert module info for backtrace: %d\n", GetLastError());
                 warned = 1;
             }
         }
@@ -139,7 +139,7 @@ static void create_PRUNTIME_FUNCTION(uint8_t *Code, size_t Size, StringRef fnnam
             name[len-1] = 0;
             if (!SymAddSymbol(GetCurrentProcess(), (ULONG64)Section, name,
                         (DWORD64)Code, (DWORD)Size, 0)) {
-                JL_PRINTF(JL_STDERR, "WARNING: failed to insert function name %s into debug info: %d\n", name, GetLastError());
+                jl_printf(JL_STDERR, "WARNING: failed to insert function name %s into debug info: %d\n", name, GetLastError());
             }
         }
         jl_in_stackwalk = 0;
@@ -148,7 +148,7 @@ static void create_PRUNTIME_FUNCTION(uint8_t *Code, size_t Size, StringRef fnnam
     if (!RtlAddFunctionTable(tbl, 1, (DWORD64)Section)) {
         static int warned = 0;
         if (!warned) {
-            JL_PRINTF(JL_STDERR, "WARNING: failed to insert function stack unwind info: %d\n", GetLastError());
+            jl_printf(JL_STDERR, "WARNING: failed to insert function stack unwind info: %d\n", GetLastError());
             warned = 1;
         }
     }
@@ -450,7 +450,7 @@ void jl_getDylibFunctionInfo(const char **name, size_t *line, const char **filen
         }
         else {
             // SymFromAddr failed
-            //fprintf(stderr,"SymFromAddr returned error : %lu\n", GetLastError());
+            //jl_printf(JL_STDERR,"SymFromAddr returned error : %lu\n", GetLastError());
         }
 
         frame_info_line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
