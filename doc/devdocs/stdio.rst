@@ -2,6 +2,8 @@
 printf() and stdio in the Julia runtime
 ***************************************
 
+.. _dev-libuv:
+
 Libuv wrappers for stdio
 ------------------------
 
@@ -86,6 +88,8 @@ runtime regardless of whether or not any particular piece of code
 is reachable before initialisation is complete.
 
 
+
+.. _dev-ios:
 
 Legacy ios.c library
 --------------------
