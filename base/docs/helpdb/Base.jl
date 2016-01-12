@@ -2054,7 +2054,7 @@ open(file_name, mode="r")
 Apply the function `f` to the result of `open(args...)` and close the resulting file
 descriptor upon completion.
 
-**Example**: `open(readall, "file.txt")`
+**Example**: `open(readstring, "file.txt")`
 """
 open(f::Function, args...)
 
@@ -2438,19 +2438,19 @@ the process.
 triu!(M, k)
 
 """
-    readall(stream::IO)
+    readstring(stream::IO)
 
 Read the entire contents of an I/O stream as a string.
 """
-readall(stream::IO)
+readstring(stream::IO)
 
 """
-    readall(filename::AbstractString)
+    readstring(filename::AbstractString)
 
 Open `filename`, read the entire contents as a string, then close the file. Equivalent to
-`open(readall, filename)`.
+`open(readstring, filename)`.
 """
-readall(filename::AbstractString)
+readstring(filename::AbstractString)
 
 """
     poll_file(path, interval_s::Real, timeout_s::Real) -> (previous::StatStruct, current::StatStruct)
@@ -6398,7 +6398,7 @@ besselk
 """
     readchomp(x)
 
-Read the entirety of `x` as a string but remove trailing newlines. Equivalent to `chomp(readall(x))`.
+Read the entirety of `x` as a string but remove trailing newlines. Equivalent to `chomp(readstring(x))`.
 """
 readchomp
 
@@ -6443,9 +6443,9 @@ asecd
 Read at most `nb` bytes from the stream into `b`, returning the number of bytes read
 (increasing the size of `b` as needed).
 
-See `readbytes` for a description of the `all` option.
+See `read` for a description of the `all` option.
 """
-readbytes!
+read!
 
 """
     basename(path::AbstractString) -> AbstractString
@@ -10260,7 +10260,7 @@ a series of integer arguments.
 cell
 
 """
-    readbytes(stream, nb=typemax(Int); all=true)
+    read(stream, nb=typemax(Int); all=true)
 
 Read at most `nb` bytes from the stream, returning a `Vector{UInt8}` of the bytes read.
 
@@ -10269,7 +10269,7 @@ requested bytes, until an error or end-of-file occurs. If `all` is `false`, at m
 `read` call is performed, and the amount of data returned is device-dependent. Note that not
 all stream types support the `all` option.
 """
-readbytes
+read
 
 """
     eig(A,[irange,][vl,][vu,][permute=true,][scale=true]) -> D, V

@@ -960,3 +960,7 @@ macro boundscheck(yesno,blk)
         :(@inbounds $(esc(blk)))
     end
 end
+
+#https://github.com/JuliaLang/julia/issues/14608
+@deprecate readall readstring
+@deprecate readbytes read
