@@ -273,7 +273,7 @@ disassociate_julia_struct(handle::Ptr{Void}) =
 function init_stdio(handle::Ptr{Void})
     t = ccall(:jl_uv_handle_type, Int32, (Ptr{Void},), handle)
     if t == UV_FILE
-       return File(RawFD(ccall(:jl_uv_file_handle,Int32,(Ptr{Void},),handle)))
+        return File(RawFD(ccall(:jl_uv_file_handle,Int32,(Ptr{Void},),handle)))
     else
         if t == UV_TTY
             ret = TTY(handle)

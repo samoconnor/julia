@@ -48,9 +48,9 @@ the same object. `fill!(A, Foo())` will return `A` filled with the result of eva
 fill!
 
 """
-    read!(stream, array::Array)
+    read!(stream or filename, array::Array)
 
-Read binary data from a stream, filling in the argument `array`.
+Read binary data from a stream or file, filling in the argument `array`.
 """
 read!
 
@@ -452,7 +452,7 @@ the mantissa.
 precision
 
 """
-    readlines(stream)
+    readlines(stream or filename)
 
 Read all lines as an array.
 """
@@ -1018,7 +1018,7 @@ See `rounding` for available rounding modes.
 Float32
 
 """
-    readuntil(stream, delim)
+    readuntil(stream or filename, delim)
 
 Read a string, up to and including the given delimiter byte.
 """
@@ -2438,19 +2438,11 @@ the process.
 triu!(M, k)
 
 """
-    readstring(stream::IO)
+    readstring(stream or filename)
 
-Read the entire contents of an I/O stream as a string.
+Read the entire contents of an I/O stream or a file as a string.
 """
-readstring(stream::IO)
-
-"""
-    readstring(filename::AbstractString)
-
-Open `filename`, read the entire contents as a string, then close the file. Equivalent to
-`open(readstring, filename)`.
-"""
-readstring(filename::AbstractString)
+readstring
 
 """
     poll_file(path, interval_s::Real, timeout_s::Real) -> (previous::StatStruct, current::StatStruct)
@@ -2468,9 +2460,9 @@ it is more reliable and efficient, although in some situations it may not be ava
 poll_file
 
 """
-    eachline(stream)
+    eachline(stream or filename)
 
-Create an iterable object that will yield each line from a stream.
+Create an iterable object that will yield each line.
 """
 eachline
 
@@ -4251,9 +4243,9 @@ Squared absolute value of `x`.
 abs2
 
 """
-    write(stream, x)
+    write(stream or filename, x)
 
-Write the canonical binary representation of a value to the given stream. Returns the number
+Write the canonical binary representation of a value to the given stream or file. Returns the number
 of bytes written into the stream.
 
 You can write multiple values with the same :func:`write` call. i.e. the following are
@@ -6445,7 +6437,7 @@ Read at most `nb` bytes from the stream into `b`, returning the number of bytes 
 
 See `read` for a description of the `all` option.
 """
-read!
+readbytes!
 
 """
     basename(path::AbstractString) -> AbstractString
@@ -7423,10 +7415,10 @@ Return the supertype of DataType `T`.
 supertype
 
 """
-    readline(stream=STDIN)
+    readline(stream=STDIN or filename)
 
 Read a single line of text, including a trailing newline character (if one is reached before
-the end of the input), from the given `stream` (defaults to `STDIN`),
+the end of the input), from the given stream or file (defaults to `STDIN`),
 """
 readline
 
