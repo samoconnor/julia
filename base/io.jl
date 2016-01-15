@@ -307,7 +307,7 @@ readline(s::IO) = readuntil(s, '\n')
 readchomp(x) = chomp!(readstring(x))
 
 # read up to nb bytes into nb, returning # bytes read
-function readbytes!(s::IO, b::AbstractArray{UInt8}, nb=length(b))
+function read!(s::IO, b::Vector{UInt8}, nb=length(b))
     olb = lb = length(b)
     nr = 0
     while nr < nb && !eof(s)
@@ -322,16 +322,15 @@ function readbytes!(s::IO, b::AbstractArray{UInt8}, nb=length(b))
     if lb > olb
         resize!(b, nr) # shrink to just contain input data if was resized
     end
-    return nr
+    return b
 end
 
 # read up to nb bytes from s, returning a Vector{UInt8} of bytes read.
 function read(s::IO, nb=typemax(Int))
-    # Let readbytes! grow the array progressively by default
+    # Let read! grow the array progressively by default
     # instead of taking of risk of over-allocating
     b = Array(UInt8, nb == typemax(Int) ? 1024 : nb)
-    nr = readbytes!(s, b, nb)
-    resize!(b, nr)
+    read!(s, b, nb)
 end
 
 function readstring(s::IO)
@@ -341,27 +340,39 @@ end
 
 ## high-level iterator interfaces ##
 
-type EachLine
+type EachChunk{T}
     stream::IO
+    f::Function
     ondone::Function
-    EachLine(stream) = EachLine(stream, ()->nothing)
-    EachLine(stream, ondone) = new(stream, ondone)
+    EachChunk(stream, f) = EachChunk{T}(stream, f, ()->nothing)
+    EachChunk(stream, f, ondone) = new(stream, f, ondone)
 end
-eachline(stream::IO) = EachLine(stream)
-eachline(filename::AbstractString) = EachLine(open(filename), close)
+eachline(stream::IO) = EachChunk{ByteString}(stream, readline)
+function eachline(filename::AbstractString)
+    io = open(filename)
+    EachChunk{ByteString}(io, readline, ()->close(io))
+end
 
-start(itr::EachLine) = nothing
-function done(itr::EachLine, nada)
-    if !eof(itr.stream)
-        return false
-    end
-    itr.ondone()
-    true
-end
-next(itr::EachLine, nada) = (readline(itr.stream), nothing)
-eltype(::Type{EachLine}) = ByteString
+start{T}(::EachChunk{T}) = nothing
+done{T}(itr::EachChunk{T}, nada) = eof(itr.stream) ? (itr.ondone(); true) : false
+next{T}(itr::EachChunk{T}, nada) = (itr.f(itr.stream), nothing)
+eltype{T}(::Type{EachChunk{T}}) = T
 
 readlines(s=STDIN) = collect(eachline(s))
+
+function eachblock(stream::IO, blocksize=0, ondone=()->nothing)
+    if blocksize == 0
+        blocksize = 8192
+    end
+    a = Array(UInt8, blocksize)
+    EachChunk{Vector{UInt8}}(stream, io->read!(io, a), ondone)
+end
+
+function eachblock(filename::AbstractString, blocksize=0)
+    io=open(filename)
+    eachblock(io, blocksize, ()->close(io))
+end
+
 
 # IOStream Marking
 

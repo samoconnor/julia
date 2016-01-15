@@ -328,13 +328,12 @@ function write(to::AbstractIOBuffer, a::UInt8)
     sizeof(UInt8)
 end
 
-function readbytes!(io::AbstractIOBuffer, b::Array{UInt8}, nb=length(b))
+function read!(io::AbstractIOBuffer, b::Vector{UInt8}, nb=length(b))
     nr = min(nb, nb_available(io))
     if length(b) < nr
         resize!(b, nr)
     end
     read_sub(io, b, 1, nr)
-    return nr
 end
 read(io::AbstractIOBuffer) = read!(io, Array(UInt8, nb_available(io)))
 read(io::AbstractIOBuffer, nb::Integer) = read!(io, Array(UInt8, min(nb, nb_available(io))))

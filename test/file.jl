@@ -1096,9 +1096,11 @@ let s = "qwerty"
 
     # Test growing output array
     x = UInt8[]
-    n = readbytes!(IOBuffer(s), x, 10)
+    a = read!(IOBuffer(s), x, 10)
     @test x == s.data
-    @test n == length(x)
+    @test a == s.data
+    @test length(a) == length(x)
+    @test length(s) == length(x)
 end
 
 # DevNull

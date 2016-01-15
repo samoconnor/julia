@@ -892,20 +892,12 @@ function stop_reading(stream::LibuvStream)
     end
 end
 
-function readbytes!(s::LibuvStream, b::AbstractArray{UInt8}, nb=length(b))
-    wait_readnb(s, nb)
-    nr = nb_available(s)
-    resize!(b, nr) # shrink to just contain input data if was resized
-    read!(s.buffer, b)
-    return nr
-end
-
 function read(stream::LibuvStream)
     wait_readnb(stream, typemax(Int))
     return takebuf_array(stream.buffer)
 end
 
-function read!(s::LibuvStream, a::Array{UInt8, 1})
+function read!(s::LibuvStream, a::Vector{UInt8})
     nb = length(a)
     sbuf = s.buffer
     @assert sbuf.seekable == false
@@ -934,6 +926,13 @@ function read!(s::LibuvStream, a::Array{UInt8, 1})
         end
     end
     return a
+end
+
+function read!(s::LibuvStream, b::Vector{UInt8}, nb=length(b))
+    wait_readnb(s, nb)
+    nr = nb_available(s)
+    resize!(b, nr)
+    read!(s.buffer, b)
 end
 
 function read(this::LibuvStream, ::Type{UInt8})

@@ -964,3 +964,9 @@ end
 #https://github.com/JuliaLang/julia/issues/14608
 @deprecate readall readstring
 @deprecate readbytes read
+
+export readbytes!
+@noinline function readbytes!(io, a, n=length(a))
+    depwarn("readbytes! is deprecated, use read! instead", :readbytes!)
+    return length(read!(io, a, n))
+end

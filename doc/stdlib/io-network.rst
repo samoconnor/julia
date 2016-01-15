@@ -152,11 +152,11 @@ General I/O
 
    Read binary data from a stream, filling in the argument ``array``\ .
 
-.. function:: readbytes!(stream, b::Vector{UInt8}, nb=length(b); all=true)
+.. function:: read!(stream, b::Vector{UInt8}, nb=length(b); all=true)
 
    .. Docstring generated from Julia source
 
-   Read at most ``nb`` bytes from the stream into ``b``\ , returning the number of bytes read (increasing the size of ``b`` as needed).
+   Read at most ``nb`` bytes from the stream into ``b``\ , resizing ``b`` to match the number of bytes read.
 
    See ``read`` for a description of the ``all`` option.
 
@@ -521,7 +521,13 @@ Text I/O
 
    .. Docstring generated from Julia source
 
-   Create an iterable object that will yield each line.
+   Iterable that yields each line.
+
+.. function:: eachblock(stream or filename, [blocksize])
+
+   .. Docstring generated from Julia source
+
+   Iterable that yields each block as `AbstractArray{UInt8}`
 
 .. function:: readdlm(source, delim::Char, T::Type, eol::Char; header=false, skipstart=0, skipblanks=true, use_mmap, ignore_invalid_chars=false, quotes=true, dims, comments=true, comment_char='#')
 

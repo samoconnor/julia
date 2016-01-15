@@ -18,11 +18,9 @@ const offs_chunk_size = 5000
 countlines(f::AbstractString, eol::Char='\n') = open(io->countlines(io,eol), f)::Int
 function countlines(io::IO, eol::Char='\n')
     isascii(eol) || throw(ArgumentError("only ASCII line terminators are supported"))
-    a = Array(UInt8, 8192)
     nl = 0
-    while !eof(io)
-        nb = readbytes!(io, a)
-        @simd for i=1:nb
+    for a in eachblock(io)
+        @simd for i=1:length(a)
             @inbounds nl += a[i] == eol
         end
     end

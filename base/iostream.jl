@@ -218,10 +218,7 @@ function readbytes_all!(s::IOStream, b::Array{UInt8}, nb)
                         s.ios, pointer(b, nr+1), min(lb-nr, nb-nr)))
         eof(s) && break
     end
-    if lb > olb && lb > nr
-        resize!(b, nr) # shrink to just contain input data if was resized
-    end
-    return nr
+    resize!(b, nr)
 end
 
 function readbytes_some!(s::IOStream, b::Array{UInt8}, nb)
@@ -231,13 +228,10 @@ function readbytes_some!(s::IOStream, b::Array{UInt8}, nb)
     end
     nr = Int(ccall(:ios_read, Csize_t, (Ptr{Void}, Ptr{Void}, Csize_t),
                    s.ios, pointer(b), nb))
-    if lb > olb && lb > nr
-        resize!(b, nr)
-    end
-    return nr
+    resize!(b, nr)
 end
 
-function readbytes!(s::IOStream, b::Array{UInt8}, nb=length(b); all::Bool=true)
+function read!(s::IOStream, b::Vector{UInt8}, nb=length(b); all::Bool=true)
     return all ? readbytes_all!(s, b, nb) : readbytes_some!(s, b, nb)
 end
 
@@ -251,14 +245,11 @@ function read(s::IOStream)
         end
     end
     b = Array(UInt8, sz<=0 ? 1024 : sz)
-    nr = readbytes_all!(s, b, typemax(Int))
-    resize!(b, nr)
+    readbytes_all!(s, b, typemax(Int))
 end
 
 function read(s::IOStream, nb::Integer; all::Bool=true)
-    b = Array(UInt8, nb)
-    nr = readbytes!(s, b, nb, all=all)
-    resize!(b, nr)
+    read!(s, Array(UInt8, nb), nb, all)
 end
 
 ## Character streams ##

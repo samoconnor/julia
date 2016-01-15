@@ -2462,9 +2462,17 @@ poll_file
 """
     eachline(stream or filename)
 
-Create an iterable object that will yield each line.
+Iterable that yields each line.
 """
 eachline
+
+"""
+    eachblock(stream or filename, [blocksize])
+
+
+Iterable that yields each block as `AbstractArray{UInt8}`
+"""
+eachblock
 
 """
     isposdef!(A) -> Bool
@@ -6430,14 +6438,13 @@ Compute the inverse secant of `x`, where the output is in degrees.
 asecd
 
 """
-    readbytes!(stream, b::Vector{UInt8}, nb=length(b); all=true)
+    read!(stream, b::Vector{UInt8}, nb=length(b); all=true)
 
-Read at most `nb` bytes from the stream into `b`, returning the number of bytes read
-(increasing the size of `b` as needed).
+Read at most `nb` bytes from the stream into `b`, resizing `b` to match the number of bytes read.
 
 See `read` for a description of the `all` option.
 """
-readbytes!
+read!
 
 """
     basename(path::AbstractString) -> AbstractString
