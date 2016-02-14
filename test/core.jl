@@ -2272,7 +2272,7 @@ end
 
 # weak references
 type Obj; x; end
-function mk_wr(r, wr)
+@noinline function mk_wr(r, wr)
     x = Obj(1)
     push!(r, x)
     push!(wr, WeakRef(x))
@@ -3717,3 +3717,17 @@ end
           function generic end
           end,
           Function)
+
+# let syntax with multiple lhs
+let z = (3,9,42)
+    let (a,b,c) = z
+        @test a == 3 && b == 9 && c == 42
+    end
+    let (a,b::Float64,c::Int8) = z
+        @test a == 3 && b === 9.0 && c === Int8(42)
+    end
+    z = (1, z, 10)
+    let (a, (b,c,d), e) = z
+        @test (a,b,c,d,e) == (1,3,9,42,10)
+    end
+end

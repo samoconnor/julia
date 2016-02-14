@@ -345,7 +345,7 @@ ifneq ($(OS), WINNT)
 # Do no enable on windows to avoid warnings from libuv.
 JCXXFLAGS += -pedantic
 endif
-DEBUGFLAGS := -Og -ggdb2 -DJL_DEBUG_BUILD -fstack-protector-all
+DEBUGFLAGS := -O0 -ggdb2 -DJL_DEBUG_BUILD -fstack-protector-all
 SHIPFLAGS := -O3 -ggdb2 -falign-functions
 endif
 
@@ -688,6 +688,9 @@ ifeq ($(shell $(LLVM_CONFIG_HOST) --version),3.3)
 # use delayed expansion (= not :=) because spawn isn't defined until later
 LLVM_CONFIG_HOST = $(call spawn,$(LLVM_CONFIG))
 endif
+else
+# llvm-config-host does not exist (cmake build)
+LLVM_CONFIG_HOST = $(call spawn,$(LLVM_CONFIG))
 endif
 endif
 
@@ -853,13 +856,14 @@ ifneq ($(USEMSVC), 1)
 HAVE_SSP := 1
 OSLIBS += -Wl,--export-all-symbols -Wl,--version-script=$(JULIAHOME)/src/julia.expmap \
 	$(NO_WHOLE_ARCHIVE) -lpsapi -lkernel32 -lws2_32 -liphlpapi -lwinmm -ldbghelp
-JLDFLAGS := -Wl,--stack,8388608
 ifeq ($(ARCH),i686)
-JLDFLAGS += -Wl,--large-address-aware
+JLDFLAGS := -Wl,--stack,8388608 -Wl,--large-address-aware
+else #x64
+JLDFLAGS := -Wl,--stack,16777216
 endif
 else #USEMSVC
 OSLIBS += kernel32.lib ws2_32.lib psapi.lib advapi32.lib iphlpapi.lib shell32.lib winmm.lib
-JLDFLAGS := -stack:8388608
+JLDFLAGS := -stack:16777216
 endif
 JCPPFLAGS += -D_WIN32_WINNT=0x0502
 UNTRUSTED_SYSTEM_LIBM := 1

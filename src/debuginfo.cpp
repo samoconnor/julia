@@ -1131,7 +1131,7 @@ void RTDyldMemoryManagerOSX::registerEHFrames(uint8_t *Addr,
 {
   // On OS X OS X __register_frame takes a single FDE as an argument.
   // See http://lists.cs.uiuc.edu/pipermail/llvmdev/2013-April/061768.html
-  processFDEs(Addr, Size, [](const char *Entry) {
+  processFDEs((char*)Addr, Size, [](const char *Entry) {
         if (!libc_register_frame) {
           libc_register_frame = (void(*)(void*))dlsym(RTLD_NEXT,"__register_frame");
         }
@@ -1145,7 +1145,7 @@ void RTDyldMemoryManagerOSX::deregisterEHFrames(uint8_t *Addr,
                                                 uint64_t LoadAddr,
                                                 size_t Size)
 {
-   processFDEs(Addr, Size, [](const char *Entry) {
+   processFDEs((char*)Addr, Size, [](const char *Entry) {
         if (!libc_deregister_frame) {
           libc_deregister_frame = (void(*)(void*))dlsym(RTLD_NEXT,"__deregister_frame");
         }
@@ -1201,7 +1201,7 @@ template<typename T> static T parse_leb128(const uint8_t *&Addr,
 {
     typedef typename std::make_unsigned<T>::type uT;
     uT v = 0;
-    for (int i = 0;i < ((sizeof(T) * 8 - 1) / 7 + 1);i++) {
+    for (unsigned i = 0;i < ((sizeof(T) * 8 - 1) / 7 + 1);i++) {
         uint8_t a = *Addr;
         Addr++;
         v |= uT(a & 0x7f) << (i * 7);
