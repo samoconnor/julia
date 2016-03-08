@@ -49,7 +49,7 @@ end
 
 
 """
-    default_worker_pool
+    default_worker_pool()
 
 WorkerPool containing idle `workers()` (used by `remote(f)`).
 """
